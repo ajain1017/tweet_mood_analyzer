@@ -59,7 +59,8 @@ def analyze_tweet():
 	with graph1.as_default():
 		preds = model.predict_proba(padded_tweet)
 	mood = labels[np.argmax(preds)]
-	return render_template('home.html', mood=mood, tweet_exhibits_text="This tweet exhibits:")
+	probability = round(preds[0][np.argmax(preds)]*100, 1)
+	return render_template('home.html', mood=str(mood) + ': ' + str(probability) + '% probability', tweet_exhibits_text="This tweet exhibits:")
 
 
 
