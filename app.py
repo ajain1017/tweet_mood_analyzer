@@ -13,31 +13,31 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'this_should_be_configured')
 
-
-##import libraries
-import keras
+## import libraries
+import keras  
 import tensorflow as tf
 from keras import backend as K
 from tensorflow import Graph, Session
+
 from keras.models import model_from_json
-import pickle
 import numpy as np
+import pickle
 from keras.preprocessing.sequence import pad_sequences
 
-##load model and tokenizer
+## load model and tokenizer
 with open('mood_tokenizer.pickle', 'rb') as file:
-    tokenizer = pickle.load(file)
+	tokenizer = pickle.load(file)
 
 with open('mood_model.json', 'r') as file:
-    model_json = file.read()
+	model_json = file.read()
 
 global model
 graph1 = Graph()
 with graph1.as_default():
-    session1 = Session(graph=graph1)
-    with session1.as_default():
-        model = model_from_json(model_json)
-        model.load_weights('mood_model.h5')
+	session1 = Session(graph=graph1)
+	with session1.as_default():
+		model = model_from_json(model_json)
+		model.load_weights('mood_model.h5')
 
 ###
 # Routing for your application.
@@ -50,20 +50,32 @@ def home():
 
 @app.route('/analyze_tweet', methods=['POST'])
 def analyze_tweet():
-    tweet = [str(request.form['tweet'])]
-    labels = ['anger', 'disgust', 'fear', 'guilt', 'joy', 'sadness', 'shame']
-    encoded_tweet = tokenizer.text_to_sequences(tweet)
-    padded_tweet = pad_sequences(encoded_tweet, maxlen=256)
+	tweet = [str(request.form['tweet'])]
+	labels = ['anger', 'disgust', 'fear', 'guilt', 'joy', 'sadness', 'shame']
+	encoded_tweet = tokenizer.texts_to_sequences(tweet)
+	padded_tweet = pad_sequences(encoded_tweet, maxlen=256)
 
-    K.set_session(session1)
-    with graph1.as_default():
-        preds = model.predict_proba(padded_tweet)
-    mood = labels[np.argmax(preds)]
-    return render_template('home.html', mood=mood, tweet_exhibits_text="This tweet exhibits: ")
+	K.set_session(session1)
+	with graph1.as_default():
+		preds = model.predict_proba(padded_tweet)
+	mood = labels[np.argmax(preds)]
+	return render_template('home.html', mood=mood, tweet_exhibits_text="This tweet exhibits:")
+
+
 
 ###
 # The functions below should be applicable to all Flask apps.
 ###
+
+@app.after_request
+def add_header(response):
+    """
+    Add headers to both force latest IE rendering engine or Chrome Frame,
+    and also to cache the rendered page for 10 minutes.
+    """
+    response.headers['X-UA-Compatible'] = 'IE=Edge,chrome=1'
+    response.headers['Cache-Control'] = 'public, max-age=600'
+    return response
 
 
 @app.errorhandler(404)
